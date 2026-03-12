@@ -1,0 +1,38 @@
+{
+  "name": "winthor-internal-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Internal read-only REST API for Winthor Oracle views",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "fastify",
+    "oracle",
+    "typescript",
+    "winthor"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.1.0",
+    "@fastify/helmet": "^13.0.2",
+    "dotenv": "^16.6.1",
+    "fastify": "^5.6.1",
+    "oracledb": "^6.10.0",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "@types/oracledb": "^6.10.1",
+    "pino-pretty": "^13.1.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}

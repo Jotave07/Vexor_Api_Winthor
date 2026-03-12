@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  winthor-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: winthor-api
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - .env
