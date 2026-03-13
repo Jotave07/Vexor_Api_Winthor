@@ -197,6 +197,21 @@ Arquivos prontos no projeto:
 
 - [hostinger-stack.example.yml](C:\Users\ADM\Documents\Playground\hostinger-stack.example.yml)
 - [default.conf](C:\Users\ADM\Documents\Playground\nginx\default.conf)
+- [Dockerfile](C:\Users\ADM\Documents\Playground\nginx\Dockerfile)
+
+Como a Hostinger pode falhar ao montar arquivo de configuracao via volume, o projeto usa uma imagem propria de Nginx.
+
+Build da imagem do Nginx:
+
+```bash
+npm run docker:build:nginx
+```
+
+Push da imagem do Nginx:
+
+```bash
+npm run docker:push:nginx
+```
 
 Com esse stack:
 

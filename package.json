@@ -10,7 +10,9 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "docker:build": "powershell -ExecutionPolicy Bypass -File scripts/docker-build.ps1",
-    "docker:push": "powershell -ExecutionPolicy Bypass -File scripts/docker-push-ghcr.ps1"
+    "docker:push": "powershell -ExecutionPolicy Bypass -File scripts/docker-push-ghcr.ps1",
+    "docker:build:nginx": "powershell -ExecutionPolicy Bypass -File scripts/docker-build-nginx.ps1",
+    "docker:push:nginx": "powershell -ExecutionPolicy Bypass -File scripts/docker-push-nginx-ghcr.ps1"
   },
   "keywords": [
     "fastify",

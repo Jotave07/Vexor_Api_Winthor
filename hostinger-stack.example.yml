@@ -27,11 +27,9 @@ services:
       MAX_PAGE_SIZE: "100"
 
   nginx:
-    image: nginx:1.27-alpine
+    image: ghcr.io/jotave07/vexor_api_winthor_nginx:latest
     restart: unless-stopped
     depends_on:
       - api_santos
     ports:
       - "80:80"
-    volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
