@@ -29,5 +29,36 @@ export function buildWhere(clauses: WhereClause[]): BuiltQuery {
 }
 
 export function appendPagination(baseSql: string): string {
-  return `${baseSql} OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY`;
+  return `
+    SELECT *
+    FROM (
+      SELECT paged_query.*, ROW_NUMBER() OVER (${extractOrderByClause(baseSql)}) AS RN
+      FROM (${removeOrderByClause(baseSql)}) paged_query
+    )
+    WHERE RN > :offset AND RN <= (:offset + :limit)
+  `;
+}
+
+function extractOrderByClause(sql: string): string {
+  const orderByMatch = sql.match(/ORDER BY[\s\S]*$/i);
+
+  if (!orderByMatch) {
+    throw new Error("Pagination queries require ORDER BY for Oracle 11g compatibility");
+  }
+
+  return orderByMatch[0];
+}
+
+function removeOrderByClause(sql: string): string {
+  return sql.replace(/ORDER BY[\s\S]*$/i, "").trim();
+}
+
+export function wrapSingleResult(baseSql: string): string {
+  return `
+    SELECT *
+    FROM (
+      ${baseSql}
+    )
+    WHERE ROWNUM = 1
+  `;
 }

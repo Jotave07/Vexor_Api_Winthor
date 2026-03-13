@@ -1,6 +1,6 @@
 import { executeQuery, executeSingle } from "../config/oracle";
 import { buildPaginationMeta, resolvePagination } from "../lib/pagination";
-import { appendPagination, buildWhere } from "../lib/sql";
+import { appendPagination, buildWhere, wrapSingleResult } from "../lib/sql";
 import { AppError, SuccessItemResponse, SuccessListResponse } from "../types/api";
 
 export interface PedidosQuery {
@@ -17,27 +17,27 @@ export async function listPedidos(query: PedidosQuery): Promise<SuccessListRespo
   const pagination = resolvePagination(query);
   const where = buildWhere([
     {
-      clause: "(PEDIDO_ID = :pedidoId OR NUMPED = :pedidoId)",
+      clause: "NUMPED = :pedidoId",
       bindName: "pedidoId",
       value: query.pedidoId
     },
     {
-      clause: "FILIAL = :filial",
+      clause: "CODFILIAL = :filial",
       bindName: "filial",
       value: query.filial
     },
     {
-      clause: "STATUS = :status",
+      clause: "POSICAO = :status",
       bindName: "status",
       value: query.status
     },
     {
-      clause: "DATA_FAT >= TO_DATE(:dataFatInicio, 'YYYY-MM-DD')",
+      clause: "DTFAT >= TO_DATE(:dataFatInicio, 'YYYY-MM-DD')",
       bindName: "dataFatInicio",
       value: query.dataFatInicio
     },
     {
-      clause: "DATA_FAT < TO_DATE(:dataFatFim, 'YYYY-MM-DD') + 1",
+      clause: "DTFAT < TO_DATE(:dataFatFim, 'YYYY-MM-DD') + 1",
       bindName: "dataFatFim",
       value: query.dataFatFim
     }
@@ -48,7 +48,7 @@ export async function listPedidos(query: PedidosQuery): Promise<SuccessListRespo
   const total = Number(totalRow?.TOTAL ?? 0);
 
   const listSql = appendPagination(
-    `SELECT * FROM WINTHOR.VW_VEXOR_PEDIDOS${where.sql} ORDER BY COALESCE(DATA_FAT, DATA_PEDIDO) DESC, COALESCE(PEDIDO_ID, NUMPED) DESC`
+    `SELECT * FROM WINTHOR.VW_VEXOR_PEDIDOS${where.sql} ORDER BY DTFAT DESC, NUMPED DESC`
   );
 
   const rows = await executeQuery<Record<string, unknown>>(listSql, {
@@ -65,13 +65,12 @@ export async function listPedidos(query: PedidosQuery): Promise<SuccessListRespo
 }
 
 export async function getPedidoById(id: number): Promise<SuccessItemResponse<Record<string, unknown>>> {
-  const sql = `
+  const sql = wrapSingleResult(`
     SELECT *
     FROM WINTHOR.VW_VEXOR_PEDIDOS
-    WHERE PEDIDO_ID = :id OR NUMPED = :id
-    ORDER BY COALESCE(DATA_FAT, DATA_PEDIDO) DESC
-    FETCH FIRST 1 ROWS ONLY
-  `;
+    WHERE NUMPED = :id
+    ORDER BY DTFAT DESC
+  `);
 
   const row = await executeSingle<Record<string, unknown>>(sql, { id });
 

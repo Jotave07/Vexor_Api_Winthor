@@ -1,6 +1,6 @@
 import { executeQuery, executeSingle } from "../config/oracle";
 import { buildPaginationMeta, resolvePagination } from "../lib/pagination";
-import { appendPagination, buildWhere } from "../lib/sql";
+import { appendPagination, buildWhere, wrapSingleResult } from "../lib/sql";
 import { AppError, SuccessItemResponse, SuccessListResponse } from "../types/api";
 
 export interface CargasQuery {
@@ -15,7 +15,7 @@ export async function listCargas(query: CargasQuery): Promise<SuccessListRespons
   const pagination = resolvePagination(query);
   const where = buildWhere([
     {
-      clause: "(CARGA_ID = :cargaId OR NUMCAR = :cargaId)",
+      clause: "CARGA_ID = :cargaId",
       bindName: "cargaId",
       value: query.cargaId
     },
@@ -36,7 +36,7 @@ export async function listCargas(query: CargasQuery): Promise<SuccessListRespons
   const total = Number(totalRow?.TOTAL ?? 0);
 
   const listSql = appendPagination(
-    `SELECT * FROM WINTHOR.VW_VEXOR_CARGAS${where.sql} ORDER BY COALESCE(DATA_CARGA, DATA_SAIDA) DESC, COALESCE(CARGA_ID, NUMCAR) DESC`
+    `SELECT * FROM WINTHOR.VW_VEXOR_CARGAS${where.sql} ORDER BY DATA_SAIDA DESC, CARGA_ID DESC`
   );
 
   const rows = await executeQuery<Record<string, unknown>>(listSql, {
@@ -53,13 +53,12 @@ export async function listCargas(query: CargasQuery): Promise<SuccessListRespons
 }
 
 export async function getCargaById(id: number): Promise<SuccessItemResponse<Record<string, unknown>>> {
-  const sql = `
+  const sql = wrapSingleResult(`
     SELECT *
     FROM WINTHOR.VW_VEXOR_CARGAS
-    WHERE CARGA_ID = :id OR NUMCAR = :id
-    ORDER BY COALESCE(DATA_CARGA, DATA_SAIDA) DESC
-    FETCH FIRST 1 ROWS ONLY
-  `;
+    WHERE CARGA_ID = :id
+    ORDER BY DATA_SAIDA DESC
+  `);
 
   const row = await executeSingle<Record<string, unknown>>(sql, { id });
 
@@ -77,34 +76,7 @@ export async function listPedidosByCargaId(
   id: number,
   query: { page?: number; limit?: number }
 ): Promise<SuccessListResponse<Record<string, unknown>>> {
-  const pagination = resolvePagination(query);
-  const binds = {
-    id,
-    offset: pagination.offset,
-    limit: pagination.limit
-  };
-
-  const countSql = `
-    SELECT COUNT(1) AS TOTAL
-    FROM WINTHOR.VW_VEXOR_CARGA_PEDIDOS
-    WHERE CARGA_ID = :id OR NUMCAR = :id
-  `;
-
-  const totalRow = await executeSingle<{ TOTAL: number }>(countSql, { id });
-  const total = Number(totalRow?.TOTAL ?? 0);
-
-  const listSql = appendPagination(`
-    SELECT *
-    FROM WINTHOR.VW_VEXOR_CARGA_PEDIDOS
-    WHERE CARGA_ID = :id OR NUMCAR = :id
-    ORDER BY COALESCE(PEDIDO_ID, NUMPED) DESC
-  `);
-
-  const rows = await executeQuery<Record<string, unknown>>(listSql, binds);
-
-  return {
-    success: true,
-    data: rows,
-    pagination: buildPaginationMeta(pagination.page, pagination.limit, total)
-  };
+  void query;
+  void id;
+  throw new AppError("View WINTHOR.VW_VEXOR_CARGA_PEDIDOS is not available in this database", 503);
 }

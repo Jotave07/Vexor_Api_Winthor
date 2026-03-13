@@ -2,3 +2,8 @@ node_modules/
 dist/
 .env
 npm-debug.log*
+*.log
+.server*.pid
+oracle/instantclient/**
+!oracle/instantclient/
+!oracle/instantclient/README.md

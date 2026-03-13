@@ -1,6 +1,6 @@
 import { executeQuery, executeSingle } from "../config/oracle";
 import { buildPaginationMeta, resolvePagination } from "../lib/pagination";
-import { appendPagination, buildWhere } from "../lib/sql";
+import { appendPagination, buildWhere, wrapSingleResult } from "../lib/sql";
 import { AppError, SuccessItemResponse, SuccessListResponse } from "../types/api";
 
 export interface EntregasQuery {
@@ -14,12 +14,12 @@ export async function listEntregas(query: EntregasQuery): Promise<SuccessListRes
   const pagination = resolvePagination(query);
   const where = buildWhere([
     {
-      clause: "(NOTA_FISCAL = :numNota OR NUMNOTA = :numNota)",
+      clause: "NUMNOTA = :numNota",
       bindName: "numNota",
       value: query.numNota
     },
     {
-      clause: "(PEDIDO_ID = :numPed OR NUMPED = :numPed)",
+      clause: "NUMPED = :numPed",
       bindName: "numPed",
       value: query.numPed
     }
@@ -30,7 +30,7 @@ export async function listEntregas(query: EntregasQuery): Promise<SuccessListRes
   const total = Number(totalRow?.TOTAL ?? 0);
 
   const listSql = appendPagination(
-    `SELECT * FROM WINTHOR.VW_VEXOR_ENTREGAS${where.sql} ORDER BY COALESCE(DATA_ENTREGA, DATA_PREVISTA) DESC, COALESCE(NOTA_FISCAL, NUMNOTA) DESC`
+    `SELECT * FROM WINTHOR.VW_VEXOR_ENTREGAS${where.sql} ORDER BY NUMNOTA DESC`
   );
 
   const rows = await executeQuery<Record<string, unknown>>(listSql, {
@@ -47,13 +47,12 @@ export async function listEntregas(query: EntregasQuery): Promise<SuccessListRes
 }
 
 export async function getEntregaByNota(nota: number): Promise<SuccessItemResponse<Record<string, unknown>>> {
-  const sql = `
+  const sql = wrapSingleResult(`
     SELECT *
     FROM WINTHOR.VW_VEXOR_ENTREGAS
-    WHERE NOTA_FISCAL = :nota OR NUMNOTA = :nota
-    ORDER BY COALESCE(DATA_ENTREGA, DATA_PREVISTA) DESC
-    FETCH FIRST 1 ROWS ONLY
-  `;
+    WHERE NUMNOTA = :nota
+    ORDER BY NUMNOTA DESC
+  `);
 
   const row = await executeSingle<Record<string, unknown>>(sql, { nota });
 

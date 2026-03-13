@@ -1,18 +1,15 @@
 # Winthor Internal API
 
-API interna somente leitura em Node.js + TypeScript para consumir VIEWs Oracle do schema `WINTHOR` e expor endpoints REST para integrações com `n8n` e portal logístico.
+API interna somente leitura em `Node.js + TypeScript + Fastify` para expor dados do Oracle Winthor em endpoints REST.
 
-## Stack
+## Status atual
 
-- Node.js
-- TypeScript
-- Fastify
-- Oracle Database Driver (`oracledb`)
-- Zod
-- dotenv
-- Pino (logger nativo do Fastify)
-- Helmet
-- CORS
+- Oracle 11g validado
+- `VW_VEXOR_PEDIDOS` validada e compatível com a API
+- autenticação por `x-api-key`
+- resposta JSON padronizada
+- build local funcionando
+- deploy preparado para Hostinger com modo `thick`
 
 ## Endpoints
 
@@ -25,287 +22,141 @@ API interna somente leitura em Node.js + TypeScript para consumir VIEWs Oracle d
 - `GET /api/entregas`
 - `GET /api/entregas/:nota`
 
-## Estrutura
+## Oracle validado
 
-```text
-src/
-  app.ts
-  server.ts
-  config/
-    env.ts
-    oracle.ts
-  lib/
-    pagination.ts
-    sql.ts
-  middlewares/
-    apiKey.ts
-    errorHandler.ts
-  routes/
-    health.ts
-    pedidos.ts
-    cargas.ts
-    entregas.ts
-  services/
-    pedidos.service.ts
-    cargas.service.ts
-    entregas.service.ts
-  types/
-    api.ts
-```
+Aliases reais encontrados no banco:
 
-## Requisitos
+- `VW_VEXOR_PEDIDOS`: `NUMCAR`, `NUMPED`, `POSICAO`, `CODFILIAL`, `CODCLI`, `DTFAT`, `VLTOTAL`, `CLIENTE`, `CGCENT`, `TELENT`, `ENDERENT`, `BAIRROENT`, `MUNICENT`, `ESTENT`, `CEPENT`
+- `VW_VEXOR_CARGAS`: `CARGA_ID`, `FILIAL`, `MOTORISTA_ID`, `DATA_SAIDA`
+- `VW_VEXOR_ENTREGAS`: `NUMNOTA`, `NUMPED`, `NUMCAR`, `CODMOTORISTA`
 
-- Node.js 20+
-- Acesso ao Oracle via `ORACLE_CONNECT_STRING`
-- Permissão de leitura nas VIEWs:
-  - `WINTHOR.VW_VEXOR_PEDIDOS`
-  - `WINTHOR.VW_VEXOR_CARGAS`
-  - `WINTHOR.VW_VEXOR_CARGA_PEDIDOS`
-  - `WINTHOR.VW_VEXOR_ENTREGAS`
+Observacao:
 
-## Configuração
+- `WINTHOR.VW_VEXOR_CARGA_PEDIDOS` nao existe atualmente nesse banco, entao `GET /api/cargas/:id/pedidos` responde `503`.
 
-1. Instale as dependências:
+## Desenvolvimento local
+
+1. Instale dependencias:
 
 ```bash
 npm install
 ```
 
-2. Crie o arquivo `.env` a partir do exemplo:
+2. Ajuste o `.env`
 
-```bash
-cp .env.example .env
-```
-
-3. Preencha as variáveis:
+Exemplo local no Windows:
 
 ```env
-API_KEY=SUA_CHAVE_AQUI
+NODE_ENV=development
+HOST=0.0.0.0
+PORT=3000
+LOG_LEVEL=info
+CORS_ORIGIN=*
+API_KEY=change-me
+
+ORACLE_DRIVER_MODE=thick
 ORACLE_USER=WINTHOR
-ORACLE_PASSWORD=SUA_SENHA_AQUI
+ORACLE_PASSWORD=change-me
 ORACLE_CONNECT_STRING=WINT
+ORACLE_CONFIG_DIR=C:\app\ADM\product\11.2.0\client_1\network\admin
+ORACLE_CLIENT_LIB_DIR=C:\Oracle\instantclient_19_30
+ORACLE_POOL_MIN=1
+ORACLE_POOL_MAX=10
+ORACLE_POOL_INCREMENT=1
+ORACLE_QUEUE_TIMEOUT_MS=5000
+ORACLE_CONNECT_TIMEOUT_MS=10000
+ORACLE_CALL_TIMEOUT_MS=15000
+
+DEFAULT_PAGE_SIZE=20
+MAX_PAGE_SIZE=100
 ```
 
-## Execução
-
-Modo desenvolvimento:
+3. Rode:
 
 ```bash
 npm run dev
 ```
 
-Build:
+## Testes
+
+Health:
+
+- [http://localhost:3000/health](http://localhost:3000/health)
+
+Em `development`, a API aceita `apiKey` na query string para facilitar teste pelo navegador:
+
+- [Pedidos](http://localhost:3000/api/pedidos?page=1&limit=20&apiKey=VEXOR-API-KEY-6f2d91c84a3b4e9fbb7a52d4e0c31a78)
+- [Cargas](http://localhost:3000/api/cargas?page=1&limit=20&apiKey=VEXOR-API-KEY-6f2d91c84a3b4e9fbb7a52d4e0c31a78)
+- [Entregas](http://localhost:3000/api/entregas?page=1&limit=20&apiKey=VEXOR-API-KEY-6f2d91c84a3b4e9fbb7a52d4e0c31a78)
+
+Exemplo com `curl`:
 
 ```bash
-npm run build
-```
-
-Produção:
-
-```bash
-npm start
+curl -H "x-api-key: SUA_CHAVE" "http://localhost:3000/api/pedidos?page=1&limit=20"
 ```
 
 ## Docker
 
-O projeto já está preparado para subir em container Linux usando o `Dockerfile` deste repositório.
+O projeto esta preparado para container Linux com Oracle 11g usando `thick mode`.
 
-### Build da imagem
+### Importante
+
+Antes do build para Hostinger, coloque os arquivos extraidos do Oracle Instant Client 19+ Linux x64 em:
+
+`oracle/instantclient/`
+
+Esse conteudo sera copiado para:
+
+`/opt/oracle/instantclient`
+
+### Build local da imagem
 
 ```bash
 docker build -t winthor-internal-api .
 ```
 
-### Rodar localmente com Docker
+## Hostinger
 
-```bash
-docker run --env-file .env -p 3000:3000 winthor-internal-api
-```
+Use o arquivo [`.env.hostinger.example`](C:\Users\ADM\Documents\Playground\.env.hostinger.example) como base.
 
-### Rodar com Docker Compose
-
-```bash
-docker compose up --build -d
-```
-
-### Como publicar no GitHub e usar no Hostinger
-
-1. Suba este projeto completo para um repositório no GitHub.
-2. No Hostinger, crie a aplicação/container apontando para o repositório.
-3. Informe que o projeto usa o arquivo `Dockerfile` na raiz.
-4. Configure as variáveis de ambiente no painel do Hostinger.
-5. Publique a aplicação.
-
-Variáveis mínimas no Hostinger:
+Configuracao recomendada para producao:
 
 ```env
 NODE_ENV=production
 HOST=0.0.0.0
 PORT=3000
+LOG_LEVEL=info
+CORS_ORIGIN=*
 API_KEY=SUA_CHAVE_REAL
+
+ORACLE_DRIVER_MODE=thick
 ORACLE_USER=WINTHOR
 ORACLE_PASSWORD=SUA_SENHA_REAL
-ORACLE_CONNECT_STRING=WINT
+ORACLE_CONNECT_STRING=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=santosdistribuidor.ddns.net)(PORT=1521))(CONNECT_DATA=(SID=WINT)))
+ORACLE_CONFIG_DIR=
+ORACLE_CLIENT_LIB_DIR=/opt/oracle/instantclient
 ORACLE_POOL_MIN=1
 ORACLE_POOL_MAX=10
 ORACLE_POOL_INCREMENT=1
 ORACLE_QUEUE_TIMEOUT_MS=5000
+ORACLE_CONNECT_TIMEOUT_MS=10000
 ORACLE_CALL_TIMEOUT_MS=15000
+
 DEFAULT_PAGE_SIZE=20
 MAX_PAGE_SIZE=100
 ```
 
-Observação:
+Passos:
 
-- A imagem não grava senha nem token internamente.
-- Tudo entra por variáveis de ambiente no Hostinger.
-- O driver `oracledb` está operando em modo Thin, ideal para container sem Oracle Instant Client.
+1. Coloque o Oracle Instant Client Linux 19+ em `oracle/instantclient/`
+2. Suba o projeto para o GitHub
+3. Aponte o Hostinger para o `Dockerfile` da raiz
+4. Cadastre as variaveis de ambiente
+5. Publique a aplicacao
 
-## GitHub Actions
+## Observacoes
 
-O repositório agora inclui o workflow [docker.yml](C:\Users\ADM\Documents\Playground\.github\workflows\docker.yml).
-
-Esse workflow faz:
-
-- `npm ci`
-- `npm run typecheck`
-- `npm run build`
-- `docker build` da imagem
-- push automático para `GHCR` em `push` para `main` ou `master`
-
-Imagem publicada no GitHub Container Registry:
-
-```text
-ghcr.io/SEU_USUARIO_OU_ORG/SEU_REPOSITORIO
-```
-
-Para usar no Hostinger, você pode escolher um destes caminhos:
-
-1. Build pelo próprio `Dockerfile` a partir do GitHub.
-2. Publicar a imagem no `GHCR` e mandar o Hostinger puxar a imagem pronta.
-
-Se usar `GHCR`, talvez seja necessário liberar o pacote como público no GitHub, dependendo da forma como o Hostinger vai puxar a imagem.
-
-## Autenticação
-
-Todos os endpoints sob `/api` exigem o header:
-
-```http
-x-api-key: SUA_CHAVE_AQUI
-```
-
-O endpoint `/health` é público para facilitar monitoramento.
-
-## Exemplos com curl
-
-Healthcheck:
-
-```bash
-curl http://localhost:3000/health
-```
-
-Listar pedidos:
-
-```bash
-curl -H "x-api-key: SUA_CHAVE_AQUI" "http://localhost:3000/api/pedidos?page=1&limit=20&filial=1&status=FATURADO"
-```
-
-Buscar pedido:
-
-```bash
-curl -H "x-api-key: SUA_CHAVE_AQUI" "http://localhost:3000/api/pedidos/12345"
-```
-
-Listar cargas:
-
-```bash
-curl -H "x-api-key: SUA_CHAVE_AQUI" "http://localhost:3000/api/cargas?page=1&limit=20&motoristaId=99"
-```
-
-Buscar carga:
-
-```bash
-curl -H "x-api-key: SUA_CHAVE_AQUI" "http://localhost:3000/api/cargas/876"
-```
-
-Pedidos por carga:
-
-```bash
-curl -H "x-api-key: SUA_CHAVE_AQUI" "http://localhost:3000/api/cargas/876/pedidos?page=1&limit=50"
-```
-
-Listar entregas:
-
-```bash
-curl -H "x-api-key: SUA_CHAVE_AQUI" "http://localhost:3000/api/entregas?page=1&limit=20&numNota=998877"
-```
-
-Buscar entrega por nota:
-
-```bash
-curl -H "x-api-key: SUA_CHAVE_AQUI" "http://localhost:3000/api/entregas/998877"
-```
-
-## Paginação
-
-A API usa `OFFSET ... FETCH NEXT ... ROWS ONLY` no Oracle.
-
-Resposta paginada:
-
-```json
-{
-  "success": true,
-  "data": [],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 100,
-    "totalPages": 5
-  }
-}
-```
-
-Resposta unitária:
-
-```json
-{
-  "success": true,
-  "data": {}
-}
-```
-
-Resposta de erro:
-
-```json
-{
-  "success": false,
-  "message": "mensagem de erro"
-}
-```
-
-## Observações Oracle
-
-- Todas as queries usam bind params.
-- Nenhum filtro é concatenado diretamente com valor vindo da requisição.
-- O pool é criado com `oracledb.createPool`.
-- O pool é encerrado quando a aplicação recebe `SIGINT` ou `SIGTERM`.
-- O driver opera em modo Thin por padrão, o que facilita deploy em Linux/Hostinger. Se seu ambiente exigir Instant Client depois, a estrutura atual continua compatível para adaptação.
-
-## Deploy Linux/Hostinger
-
-- Defina as variáveis de ambiente no painel do servidor.
-- Rode `npm ci` ou `npm install`.
-- Gere build com `npm run build`.
-- Suba com `npm start`.
-- Garanta conectividade do servidor Linux com o Oracle `WINT`.
-- Se for usar container no Hostinger, basta apontar para o `Dockerfile` deste repositório e cadastrar as variáveis no painel.
-
-## Ajustes de aliases
-
-O projeto assume que as VIEWs já expõem aliases compatíveis com os nomes citados no escopo, como `PEDIDO_ID`, `NUMPED`, `CARGA_ID`, `NUMCAR`, `NOTA_FISCAL` e `NUMNOTA`.
-
-Se algum alias real da VIEW for diferente, ajuste apenas os filtros em:
-
-- `src/services/pedidos.service.ts`
-- `src/services/cargas.service.ts`
-- `src/services/entregas.service.ts`
+- Todas as queries usam bind params
+- Nenhum filtro concatena valor vindo da requisicao
+- A paginacao foi adaptada para Oracle 11g com `ROW_NUMBER()`
+- Em producao, prefira sempre `x-api-key` via header

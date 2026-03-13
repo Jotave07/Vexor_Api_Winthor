@@ -13,6 +13,16 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
     return;
   }
 
+  const oracleError = error as Error & { code?: string; errorNum?: number };
+
+  if (oracleError.code?.startsWith("ORA-") || oracleError.code?.startsWith("NJS-")) {
+    reply.status(503).send({
+      success: false,
+      message: `Oracle error: ${oracleError.code}${oracleError.message ? ` - ${oracleError.message}` : ""}`
+    });
+    return;
+  }
+
   if (error instanceof ZodError) {
     reply.status(400).send({
       success: false,
