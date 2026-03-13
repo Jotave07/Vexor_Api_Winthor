@@ -86,6 +86,7 @@ Health:
 Em `development`, a API aceita `apiKey` na query string para facilitar teste pelo navegador:
 
 - [Pedidos](http://localhost:3000/api/pedidos?page=1&limit=20&apiKey=VEXOR-API-KEY-6f2d91c84a3b4e9fbb7a52d4e0c31a78)
+- [Pedidos por carga](http://localhost:3000/api/pedidos?page=1&limit=20&cargaId=999999&apiKey=VEXOR-API-KEY-6f2d91c84a3b4e9fbb7a52d4e0c31a78)
 - [Cargas](http://localhost:3000/api/cargas?page=1&limit=20&apiKey=VEXOR-API-KEY-6f2d91c84a3b4e9fbb7a52d4e0c31a78)
 - [Entregas](http://localhost:3000/api/entregas?page=1&limit=20&apiKey=VEXOR-API-KEY-6f2d91c84a3b4e9fbb7a52d4e0c31a78)
 

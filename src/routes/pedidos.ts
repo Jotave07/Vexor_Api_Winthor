@@ -6,6 +6,7 @@ const pedidosQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional(),
   limit: z.coerce.number().int().positive().optional(),
   pedidoId: z.coerce.number().int().positive().optional(),
+  cargaId: z.coerce.number().int().positive().optional(),
   filial: z.string().trim().min(1).optional(),
   status: z.string().trim().min(1).optional(),
   dataFatInicio: z.string().date().optional(),

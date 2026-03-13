@@ -7,6 +7,7 @@ export interface PedidosQuery {
   page?: number;
   limit?: number;
   pedidoId?: number;
+  cargaId?: number;
   filial?: string;
   status?: string;
   dataFatInicio?: string;
@@ -20,6 +21,11 @@ export async function listPedidos(query: PedidosQuery): Promise<SuccessListRespo
       clause: "NUMPED = :pedidoId",
       bindName: "pedidoId",
       value: query.pedidoId
+    },
+    {
+      clause: "NUMCAR = :cargaId",
+      bindName: "cargaId",
+      value: query.cargaId
     },
     {
       clause: "CODFILIAL = :filial",
