@@ -8,7 +8,9 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "docker:build": "powershell -ExecutionPolicy Bypass -File scripts/docker-build.ps1",
+    "docker:push": "powershell -ExecutionPolicy Bypass -File scripts/docker-push-ghcr.ps1"
   },
   "keywords": [
     "fastify",

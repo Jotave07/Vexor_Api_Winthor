@@ -112,7 +112,27 @@ Esse conteudo sera copiado para:
 ### Build local da imagem
 
 ```bash
-docker build -t winthor-internal-api .
+npm run docker:build
+```
+
+Isso gera a imagem:
+
+```text
+ghcr.io/jotave07/vexor_api_winthor:latest
+```
+
+### Push da imagem para o GHCR
+
+Primeiro faca login no registro:
+
+```bash
+docker login ghcr.io -u Jotave07
+```
+
+Depois publique:
+
+```bash
+npm run docker:push
 ```
 
 ## Hostinger
@@ -149,10 +169,54 @@ MAX_PAGE_SIZE=100
 Passos:
 
 1. Coloque o Oracle Instant Client Linux 19+ em `oracle/instantclient/`
-2. Suba o projeto para o GitHub
-3. Aponte o Hostinger para o `Dockerfile` da raiz
-4. Cadastre as variaveis de ambiente
-5. Publique a aplicacao
+2. Rode `npm run docker:build`
+3. Rode `docker login ghcr.io -u Jotave07`
+4. Rode `npm run docker:push`
+5. No Hostinger, crie a aplicacao por imagem Docker
+6. Informe a imagem `ghcr.io/jotave07/vexor_api_winthor:latest`
+7. Cadastre as variaveis de ambiente
+8. Publique a aplicacao
+
+### Sem :3000 no dominio
+
+Se quiser acessar a API como:
+
+```text
+https://api.vexortech.cloud/health
+```
+
+em vez de:
+
+```text
+http://api.vexortech.cloud:3000/health
+```
+
+use um proxy reverso Nginx na frente da API.
+
+Arquivos prontos no projeto:
+
+- [hostinger-stack.example.yml](C:\Users\ADM\Documents\Playground\hostinger-stack.example.yml)
+- [default.conf](C:\Users\ADM\Documents\Playground\nginx\default.conf)
+
+Com esse stack:
+
+- `api_santos` fica interno, exposto somente para o Nginx
+- `nginx` publica a porta `80`
+- o dominio `api.vexortech.cloud` pode apontar para o IP do servidor sem usar `:3000`
+
+Depois do deploy com Nginx, o teste esperado passa a ser:
+
+- `http://api.vexortech.cloud/health`
+
+## GitHub
+
+O repositório no GitHub agora roda somente validacao de codigo via Actions:
+
+- `npm ci`
+- `npm run typecheck`
+- `npm run build`
+
+O build da imagem ficou fora do GitHub porque os binarios do Oracle Instant Client Linux nao sao versionados no repositório.
 
 ## Observacoes
 
